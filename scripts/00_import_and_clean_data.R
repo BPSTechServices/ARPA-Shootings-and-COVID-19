@@ -106,6 +106,9 @@ camps_reported_by_tract <- camp_reportings_weekly %>%
   group_by(GEOID) %>%
   summarize(camps_reported = n())
 
+
+camps_hucirp <- geojsonsf::geojson_sf("https://www.portlandmaps.com/private/rest/services/HUCIRP_Layers_Read_Only/MapServer/0/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&distance=&units=esriSRUnit_Foot&relationParam=&outFields=*&returnGeometry=true&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&havingClause=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&historicMoment=&returnDistinctValues=false&resultOffset=&resultRecordCount=&returnExtentOnly=false&datumTransformation=&parameterValues=&rangeValues=&quantizationParameters=&featureEncoding=esriDefault&f=geojson")
+
 ##### 1.6 Shooting and crime data #####
 shootings_raw <- rio::import("./data/Shootings.csv") %>%
   janitor::clean_names()
