@@ -95,10 +95,10 @@ covid_cases <- rio::import("./data/covid_cases_zip.csv") %>%
   select(zip, ZCTA, cases, covid_rate = rate_per_100_000)
 
 ##### 1.5 Homeless camp reportings #####
-camp_reportings_weekly <- geojsonsf::geojson_sf("https://www.portlandmaps.com/arcgis/rest/services/Public/Campsite_Reporting/MapServer/1/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&distance=&units=esriSRUnit_Foot&relationParam=&outFields=&returnGeometry=true&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&havingClause=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&historicMoment=&returnDistinctValues=false&resultOffset=&resultRecordCount=&returnExtentOnly=false&datumTransformation=&parameterValues=&rangeValues=&quantizationParameters=&featureEncoding=esriDefault&f=geojson") %>%
+camp_reportings_weekly <- geojsonsf::geojson_sf("https://www.portlandmaps.com/arcgis/rest/services/Public/Campsite_Reporting/MapServer/1/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&distance=&units=esriSRUnit_Foot&relationParam=&outFields=*&returnGeometry=true&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&havingClause=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&historicMoment=&returnDistinctValues=false&resultOffset=&resultRecordCount=&returnExtentOnly=false&datumTransformation=&parameterValues=&rangeValues=&quantizationParameters=&featureEncoding=esriDefault&f=geojson") %>%
   st_transform(2913) 
 
-mapview(camp_reportings_weekly)
+# mapview(camp_reportings_weekly)
 
 camps_reported_by_tract <- camp_reportings_weekly %>%
   st_join(., select(msa_tracts, GEOID)) %>%
@@ -106,8 +106,26 @@ camps_reported_by_tract <- camp_reportings_weekly %>%
   group_by(GEOID) %>%
   summarize(camps_reported = n())
 
+## Homeless camp data from OMF
+camps_hucirp <- geojsonsf::geojson_sf("./data/private/hucirp_20200609.geojson")
+# 
+# mapview(camps_hucirp %>% filter(is_active == 1), zcol = "score")
+# 
+# hucirp_camps_by_tract <- camps_hucirp %>%
+#   filter(is_active == 1) %>%
+#   st_transform(2913) %>%
+#   st_join(., select(msa_tracts, GEOID)) %>%
+#   st_drop_geometry() %>%
+#   group_by(GEOID) %>%
+#   summarize(hucirp_camps = n())
+# 
+# camps_hucirp %>%
+#   st_transform(2913) %>%
+#   st_join(., select(msa_tracts, GEOID)) %>%
+#   st_drop_geometry() %>%
+#   group_by(risk_drug) %>%
+#   summarize(hucirp_camps = n())
 
-camps_hucirp <- geojsonsf::geojson_sf("https://www.portlandmaps.com/private/rest/services/HUCIRP_Layers_Read_Only/MapServer/0/query?where=1%3D1&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&distance=&units=esriSRUnit_Foot&relationParam=&outFields=*&returnGeometry=true&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&havingClause=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&historicMoment=&returnDistinctValues=false&resultOffset=&resultRecordCount=&returnExtentOnly=false&datumTransformation=&parameterValues=&rangeValues=&quantizationParameters=&featureEncoding=esriDefault&f=geojson")
 
 ##### 1.6 Shooting and crime data #####
 shootings_raw <- rio::import("./data/Shootings.csv") %>%
@@ -122,7 +140,6 @@ shootings <- shootings_raw %>%
   st_as_sf(coords = c("open_data_longitude", "open_data_latitude"), crs = 4269) %>%
   st_transform(2913)
   
-
 shootings_by_tract <- shootings %>%
   st_join(., select(ui_rapi, GEOID)) %>%
   filter(occurence_date >= lubridate::mdy("05/20/2020")) %>%
@@ -148,11 +165,25 @@ cases.sf <- pdx_zips %>%
 
 # cases.sf  %>% mapview(., label = "ZCTA")
 
+##### 1.7 Livable area (no RoW or Industrial) to calculate pop density #####
+livable_area <- readRDS("./data/livable_area.rds") %>% st_transform(2913) %>% summarize() %>% st_make_valid()
+
+##### 1.8 Complete Neighborhood score #####
+st_layers("./data/data.gdb")
+cn_score_tract <- st_read("./data/data.gdb", "zonal_stats_table_cn_tract") %>%
+  select(GEOID = FIPS, cn_score_mean = MEAN)
+
+##### 1.9 geography overlays #####
+tract_crosswalk <- rio::import("./data/pdx_tracts.xlsx") %>%
+  mutate(GEOID = as.character(FIPS)) %>% select(-FIPS)
+liaison_districts <- geojson_sf("https://opendata.arcgis.com/datasets/afcd804336ca4e5388698a437cf68be3_203.geojson") %>%
+  st_transform(2913) %>% dplyr::select(liaison_distrct = MapLabel)
+
 ##### Step 2: Combine working data #####
 
 working_data <- ui_rapi %>%
   st_transform(2913) %>%
-  filter(GEOID != "41051980000") %>% # Remove Swan Island
+  filter(!(GEOID %in% c("41051980000", "41051010200"))) %>% # Remove Swan Island and outer NE tract mostly outside Portland
   areal::aw_interpolate(., tid = GEOID, 
                         source = cases.sf, 
                         sid = "ZCTA", 
@@ -163,9 +194,27 @@ working_data <- ui_rapi %>%
   left_join(., shootings_by_tract_jitter, by = "GEOID") %>%
   left_join(., camps_reported_by_tract, by = "GEOID") %>%
   left_join(., tot_pop, by = "GEOID") %>%
+  left_join(., cn_score_tract, by = "GEOID") %>%
+  left_join(., tract_crosswalk, by = "GEOID") %>%
+  st_join(., liaison_districts, largest = TRUE) %>%
   mutate(camps_reported = ifelse(is.na(camps_reported), 0, camps_reported),
          shooting_rate = ifelse(is.na(total_shootings) | total_shootings == 0, 0, total_shootings / tot_pop * 100000),
-         shooting_rate_jitter = ifelse(is.na(total_shootings_jitter) | total_shootings_jitter == 0, 0, total_shootings_jitter / tot_pop * 100000))
+         shooting_rate_jitter = ifelse(is.na(total_shootings_jitter) | total_shootings_jitter == 0, 0, total_shootings_jitter / tot_pop * 100000),
+         pop_density = as.numeric(tot_pop / st_area(.)) / 3.58701e-8)
+
+# pop_density_livable <- working_data %>%
+#   rmapshaper::ms_simplify(.) %>%
+#   st_intersection(., livable_area) %>%
+#   mutate(pop_density_livable = as.numeric(tot_pop / st_area(.)) / 3.58701e-8) %>% 
+#   select(GEOID, pop_density_livable) %>% 
+#   st_drop_geometry()
+# 
+# saveRDS(pop_density_livable, "./data/pop_density_livable.rds")
+pop_density_livable <- readRDS("./data/pop_density_livable.rds")
+
+working_data <- left_join(working_data, pop_density_livable, by = "GEOID")
+
+# mapview(working_data, zcol = "pop_density_livable")
 
 saveRDS(working_data, "./data/working_data.rds")
 

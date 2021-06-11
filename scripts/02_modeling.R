@@ -12,10 +12,13 @@ working_data %>%
 ## Correlation matrix
 working_data %>%
   st_drop_geometry() %>% 
-  select(shooting_rate, covid_rate, equity_index_quantile, pct_m15t54, camps_reported) %>% 
-  ggpairs(.)
+  mutate(log_shooting_rate = ifelse(log(shooting_rate) %in% c(-Inf, Inf), NA_integer_, log(shooting_rate)),
+         log_pop_dens = log(pop_density_livable)) %>% 
+  select(shooting_rate, covid_rate, equity_index_quantile, cn_score_mean) %>% 
+  # ggcorr()
+  ggpairs(.) 
 
-m1 <- glm(shooting_rate ~ covid_rate + equity_index_quantile + pct_m15t54 + camps_reported, data = working_data)
+m1 <- glm(shooting_rate ~ covid_rate + equity_index_quantile + pct_m15t54 + camps_reported + cn_score_mean + pop_density_livable, data = working_data)
 summary(m1)
 
 m2 <- glm(shooting_rate_jitter ~ covid_rate + equity_index_quantile + pct_m15t54, data = working_data)
@@ -23,6 +26,16 @@ summary(m2)
 
 m3 <- glm(shooting_rate_jitter ~ covid_rate, data = working_data)
 summary(m3)
+
+
+# Other useful functions
+coefficients(m1) # model coefficients
+confint(m1, level=0.95) # CIs for model parameters
+fitted(m1) # predicted values
+residuals(m1) # residuals
+anova(m1) # anova table
+vcov(m1) # covariance matrix for model parameters
+influence(m1) # regression diagnostics
 
 # ## PCA scree plot
 # working_data %>%
