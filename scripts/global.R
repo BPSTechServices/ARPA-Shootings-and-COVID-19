@@ -20,3 +20,11 @@ options(
 )
 
 range01 <- function(x, ...){(x - min(x, ...)) / (max(x, ...) - min(x, ...))}
+
+sfc_as_cols <- function(x, names = c("lon","lat")) {
+  ret <- sf::st_coordinates(x)
+  ret <- tibble::as_tibble(ret)
+  x <- x[ , !names(x) %in% names]
+  ret <- setNames(ret,names)
+  dplyr::bind_cols(x,ret)
+}
