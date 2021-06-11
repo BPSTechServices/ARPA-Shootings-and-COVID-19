@@ -13,6 +13,9 @@ library(biscale)
 library(cowplot)
 library(extrafont) #; font_import() 
 library(viridis)
+library(tmaptools)
+library(tmap)
+tmap_mode("view")
 
 options(
   tigris_use_cache = T,

@@ -34,7 +34,7 @@ generate_bimap <- function(.data, xcol, ycol, style, bidim = 3, xlab, ylab, titl
       subtitle = subtitle
     ) +
     bi_theme() +
-    theme(title = element_text(size = 14)) #  text=element_text(family="Segoe UI")
+    theme(title = element_text(size = 14)) # text=element_text(family="Segoe UI")
   
   ggdraw() +
     draw_plot(map, 0, 0, 1, 1) +
@@ -45,11 +45,6 @@ p1 <- generate_bimap(working_data, x = shooting_rate, y = covid_rate, style = "q
                      xlab = "More shootings ", ylab = "More infections ", 
                      title = "Shootings and COVID-19",
                      subtitle = "Shootings per 100k and COVID-19 infection rates per 100k people") ; p1
-
-# p2 <- generate_bimap(working_data, x = shooting_rate_jitter, y = covid_rate, style = "quantile", 
-#                      xlab = "More shootings ", ylab = "More infections ", 
-#                      title = "Shootings and COVID-19",
-#                      subtitle = "Shootings per 100k and COVID-19 infection rates per 100k people") ; p2
 
 p3 <- generate_bimap(working_data, x = shooting_rate, y = equity_index, style = "quantile", 
                      xlab = "More shootings ", ylab = "Higher equity need ", 
@@ -85,21 +80,6 @@ p9 <- generate_bimap(working_data, x = shooting_rate, y = cn_score_mean_inverse,
                      xlab = "More shootings ", ylab = "Less complete ", 
                      title = "Shootings and Neighborhood Completeness",
                      subtitle = "Shootings per 100k and Complete Neighborhood Score") ; p9
-
-generate_bimap(working_data, x = shooting_rate, y = perc_unemployed_laborforce, style = "quantile", 
-                     xlab = "More shootings ", ylab = "Higher unemployment ", 
-                     title = "Shootings and Unemployment",
-                     subtitle = "") 
-
-generate_bimap(working_data, x = covid_rate, y = perc_unemployed_laborforce, style = "quantile", 
-               xlab = "More infections ", ylab = "Higher unemployment ", 
-               title = "Infections and Unemployment",
-               subtitle = "") 
-
-generate_bimap(working_data, x = covid_rate, y = perc_low_income_jobs_lost, style = "quantile", 
-               xlab = "More infections ", ylab = "Higher COVID job loss ", 
-               title = "Infections and Low-Wage COVID Job Loss",
-               subtitle = "") 
 
 p10<-working_data %>% ggplot() +
   geom_sf(aes(fill = prioritization_index), color = "white", size = 0.1, show.legend = TRUE) +
@@ -238,12 +218,6 @@ ggsave(file="./plots/GRAPH_equity_v_covid.svg", plot=g3, width=7.2, height=5)
 
 
 
-
-library(tmaptools)
-library(tmap)
-tmap_mode("view")
-
-
 ### Shootings
 shootings2 <- shootings %>%
   st_transform(4326) %>%
@@ -252,12 +226,11 @@ shootings2 <- shootings %>%
 box <- st_bbox(shootings2)
 shootings_kde <- raster(kde2d(x = st_coordinates(shootings2)[,1], y = st_coordinates(shootings2)[,2], 
                               h = .03, n = c(700,700), 
-                              lims = c(box[1]-.17, box[3]+.17, box[2]-.12, box[4]+.12)
-                              ))
+                              lims = c(box[1]-.17, box[3]+.17, box[2]-.12, box[4]+.12)))
 
-map1 <- tm_shape(shootings_kde) +
+tm_shape(shootings_kde) +
   tm_raster(style = "cont", legend.show = TRUE, alpha = 0.7, palette = "inferno", title = "Shootings Density") +
-  tm_scale_bar(position = c("left", "bottom")) ; map1
+  tm_scale_bar(position = c("left", "bottom"))
 
 
 ### Camps reported
@@ -269,12 +242,11 @@ camp_reportings_weekly2 <- camp_reportings_weekly %>%
 box <- st_bbox(camp_reportings_weekly2)
 camps_kde <- raster(kde2d(x = st_coordinates(camp_reportings_weekly2)[,1], y = st_coordinates(camp_reportings_weekly2)[,2], 
                               h = .03, n = c(700,700), 
-                              lims = c(box[1]-.17, box[3]+.17, box[2]-.12, box[4]+.12)
-))
+                              lims = c(box[1]-.17, box[3]+.17, box[2]-.12, box[4]+.12)))
 
-map2 <- tm_shape(camps_kde) +
+tm_shape(camps_kde) +
   tm_raster(style = "cont", legend.show = TRUE, alpha = 0.5, palette = "inferno", title = "Camps Density") +
-  tm_scale_bar(position = c("left", "bottom")) ; map2
+  tm_scale_bar(position = c("left", "bottom"))
 
 
 ### Camps HUCIRP
@@ -286,22 +258,11 @@ camps_hucirp2 <- camps_hucirp %>%
 box <- st_bbox(camps_hucirp2)
 camps_hucirp_kde <- raster(kde2d(x = st_coordinates(camps_hucirp2)[,1], y = st_coordinates(camps_hucirp2)[,2], 
                           h = .03, n = c(700,700), 
-                          lims = c(box[1]-.27, box[3]+.27, box[2]-.19, box[4]+.19)
-))
+                          lims = c(box[1]-.27, box[3]+.27, box[2]-.19, box[4]+.19)))
 
-map2b <- tm_shape(camps_hucirp_kde) +
+tm_shape(camps_hucirp_kde) +
   tm_raster(style = "cont", legend.show = TRUE, alpha = 0.7, palette = "inferno", title = "Camps Density\n(HUCIRP)") +
-  tm_scale_bar(position = c("left", "bottom")) ; map2b
-
-
-
-
-
-map1 <- tm_shape(shootings_kde) +
-  tm_raster(style = "cont", legend.show = TRUE, alpha = 0.4, palette = "viridis", title = "Shootings Density") +
-  tm_scale_bar(position = c("left", "bottom")) 
-
-map2 + map1
+  tm_scale_bar(position = c("left", "bottom"))
 
 
 liaison_districts %>%
